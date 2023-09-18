@@ -41,25 +41,31 @@ namespace TslUmdNet
         {
             tcpListener = new TcpListener(IPAddress.Any, port);
             tcpListener.Start();
+            
+
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        TcpClient client = tcpListener.AcceptTcpClient();
+                        Task.Run(() => HandleTCPClient(client));
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"TCP listener error: {ex}");
+                    }
+                }
+
+            });
 
             Console.WriteLine($"Listening for TCP connections on port {port}...");
 
-            while (true)
-            {
-                try
-                {
-                    TcpClient client = tcpListener.AcceptTcpClient();
-                    Task.Run(() => HandleTCPClient(client));
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"TCP listener error: {ex}");
-                }
-            }
         }
 
 
-        public void SendTallyUDP(string ip, int port, TallyData tally, bool? sequence = null)
+        public bool SendTallyUDP(string ip, int port, TallyData tally, bool? sequence = null)
         {
             try
             {
@@ -81,15 +87,18 @@ namespace TslUmdNet
                     client.Send(msg, msg.Length, ip, port);
                     Console.WriteLine("TSL 5 UDP Data sent.");
                 }
+                return true;
             }
             catch (Exception ex)
             {
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Error sending TSL 5 UDP tally: {ex}");
-                throw;
+                Console.ResetColor();
+                return false;
             }
         }
 
-        public void SendTallyTCP(string ip, int port, TallyData tally, bool? sequence = null)
+        public bool SendTallyTCP(string ip, int port, TallyData tally, bool? sequence = null)
         {
             try
             {
@@ -115,11 +124,14 @@ namespace TslUmdNet
                     client.Close();
                     Console.WriteLine("TSL 5 TCP Data sent.");
                 }
+                return true;
             }
             catch (Exception ex)
             {
+                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Error sending TSL 5 TCP tally: {ex}");
-                throw;
+                Console.ResetColor();
+                return false;
             }
         }
 
